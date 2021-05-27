@@ -1,0 +1,6 @@
+main: "me.m1dnightninja.${modid}.spigot.{$modclass}"
+version: {version}
+name: {modname}
+authors: [
+    M1dnight_Ninja
+]

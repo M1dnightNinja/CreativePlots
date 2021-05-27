@@ -1,0 +1,87 @@
+
+plugins {
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+}
+
+repositories {
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+    maven {
+        url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+    }
+    maven {
+        url 'https://libraries.minecraft.net/'
+    }
+    mavenLocal()
+}
+
+configurations {
+    shade
+    compile.extendsFrom(shade)
+}
+
+dependencies {
+
+    compileOnly("org.spigotmc:spigot:${project.ext.minecraftVersion}-R0.1-SNAPSHOT")
+
+    shade(project(':api'))
+    shade(project(':common'))
+
+}
+
+processResources {
+    inputs.property("version", project.ext.fullVersion)
+
+    Map<String, ?> ex = new HashMap<>()
+    ex.put("version", project.ext.fullVersion)
+    ex.put("modid", project.ext.modid)
+    ex.put("modname", project.ext.modname)
+    ex.put("modclass", project.ext.modclass)
+
+    from(sourceSets.main.resources.srcDirs) {
+        include "plugin.yml"
+        expand(ex)
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        include "plugin.yml"
+    }
+}
+
+shadowJar {
+
+    setArchivesBaseName("${project.ext.archiveName}-fabric-dev")
+    configurations = [ project.getConfigurations().shade ]
+
+    dependencies {
+
+        exclude('net.fabricmc:.*')
+        include(project(':api'))
+        include(project(':common'))
+
+        exclude('/mapping/*')
+
+    }
+
+}
+
+artifacts {
+    jar
+    sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifacts {
+                jar
+                sourcesJar
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}

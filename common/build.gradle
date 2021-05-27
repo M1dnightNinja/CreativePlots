@@ -1,0 +1,35 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+}
+
+repositories {
+    mavenLocal()
+}
+
+dependencies {
+
+    compile 'me.m1dnightninja.midnightcore:common:1.0-latest'
+    compile 'me.m1dnightninja.midnightcore:api:1.0-latest'
+
+    compile project(':api')
+}
+
+artifacts {
+    jar
+    sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifacts {
+                jar
+                sourcesJar
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}

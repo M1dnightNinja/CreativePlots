@@ -1,0 +1,27 @@
+repositories {
+    mavenLocal()
+}
+
+dependencies {
+    compile("me.m1dnightninja.midnightcore:api:1.0-latest")
+}
+
+artifacts {
+    jar
+    sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifacts {
+                jar
+                sourcesJar
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}

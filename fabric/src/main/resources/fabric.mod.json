@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "${modid}",
+  "version": "${version}",
+  "name": "${modname}",
+  "description": "",
+  "authors": [
+    "M1dnight_Ninja"
+  ],
+  "contact": {},
+  "lisence": "MIT",
+  "icon": "assets/${modid}/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "midnightcore:mod": [
+      "me.m1dnightninja.${modid}.fabric.${modclass}"
+    ]
+  },
+  "mixins": [
+    "${modid}.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.11.0",
+    "minecraft": ">=1.16.0"
+  }
+}
