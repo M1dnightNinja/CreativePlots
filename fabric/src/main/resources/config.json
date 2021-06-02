@@ -1,1 +1,8 @@
-{ }
+{
+  "allowed_items": [
+    "minecraft:firework_rocket",
+    "minecraft:ender_pearl",
+    "minecraft:carrot_on_a_stick"
+  ],
+  "max_plot_size": 4
+}

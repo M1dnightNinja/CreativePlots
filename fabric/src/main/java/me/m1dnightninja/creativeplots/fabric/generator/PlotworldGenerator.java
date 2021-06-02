@@ -2,6 +2,7 @@ package me.m1dnightninja.creativeplots.fabric.generator;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import me.m1dnightninja.creativeplots.api.math.Region;
 import me.m1dnightninja.creativeplots.api.plot.PlotPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -42,10 +43,6 @@ public class PlotworldGenerator extends ChunkGenerator {
         this.plotworld = world;
     }
 
-    public PlotworldGeneratorSettings getPlotworld() {
-        return plotworld;
-    }
-
     @Override
     protected Codec<? extends ChunkGenerator> codec() {
         return CODEC;
@@ -54,6 +51,49 @@ public class PlotworldGenerator extends ChunkGenerator {
     @Override
     public ChunkGenerator withSeed(long l) {
         return this;
+    }
+
+    public PlotworldGeneratorSettings settings() {
+        return plotworld;
+    }
+
+    public void regenerateRegion(Region r, Level l) {
+
+        int height = plotworld.getGenerationHeight();
+        BlockState roadState = plotworld.getRoadBlock();
+        BlockState borderState = plotworld.getBorderBlock();
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for(int y = r.getLowerBound().getY() ; y < r.getUpperBound().getY() + 1 ; y++) {
+
+            if(y > l.getHeight()) break;
+            BlockState state = plotworld.getBlockForLayer(y);
+
+            for(int x = r.getLowerBound().getX() ; x < r.getUpperBound().getX() + 1; x++) {
+                for(int z = r.getLowerBound().getZ() ; z < r.getUpperBound().getZ() + 1 ; z++) {
+
+                    BlockState tState = state;
+                    pos.set(x,y,z);
+                    if(y == height) {
+
+                        if(PlotPos.fromCoords(x, z, plotworld.getPlotSize(), plotworld.getRoadSize()) == null) {
+                            tState = roadState;
+                        }
+
+                    } else if(y == height + 1) {
+
+                        if(PlotPos.isPlotBorder(x, z, plotworld.getPlotSize(), plotworld.getRoadSize())) {
+                            tState = borderState;
+                        }
+
+                    }
+
+                    l.setBlock(pos, tState, 2);
+                }
+            }
+        }
+
     }
 
     @Override
@@ -65,11 +105,12 @@ public class PlotworldGenerator extends ChunkGenerator {
         Heightmap hm2 = chunkAccess.getOrCreateHeightmapUnprimed(Heightmap.Types.WORLD_SURFACE_WG);
 
         BlockState roadState = plotworld.getRoadBlock();
+        BlockState borderState = plotworld.getBorderBlock();
 
         int ox = chunkAccess.getPos().getMinBlockX();
         int oz = chunkAccess.getPos().getMinBlockZ();
 
-        for(int y = 1 ; y <= height ; y++) {
+        for(int y = 1 ; y <= height + 1; y++) {
 
             BlockState state = plotworld.getBlockForLayer(y);
 
@@ -86,6 +127,16 @@ public class PlotworldGenerator extends ChunkGenerator {
                         if(PlotPos.fromCoords(px, pz, plotworld.getPlotSize(), plotworld.getRoadSize()) == null) {
                             tState = roadState;
                         }
+
+                    } else if(y == height + 1) {
+
+                        int px = x + ox;
+                        int pz = z + oz;
+
+                        if(PlotPos.isPlotBorder(px, pz, plotworld.getPlotSize(), plotworld.getRoadSize())) {
+                            tState = borderState;
+                        }
+
                     }
 
                     chunkAccess.setBlockState(pos, tState, false);
@@ -179,6 +230,7 @@ public class PlotworldGenerator extends ChunkGenerator {
                         Codec.INT.fieldOf("generation_height").forGetter(PlotworldGeneratorSettings::getGenerationHeight),
                         Biome.CODEC.fieldOf("biome_id").forGetter(PlotworldGeneratorSettings::getBiome),
                         Registry.BLOCK.fieldOf("road_block").forGetter(settings -> settings.getRoadBlock().getBlock()),
+                        Registry.BLOCK.fieldOf("border_block").forGetter(settings -> settings.getBorderBlock().getBlock()),
                         FlatLayerInfo.CODEC.listOf().fieldOf("layers").forGetter(PlotworldGeneratorSettings::getLayers)
                 ).apply(instance, instance.stable(PlotworldGeneratorSettings::new)));
 
@@ -188,13 +240,15 @@ public class PlotworldGenerator extends ChunkGenerator {
         private final Supplier<Biome> biome;
         private final List<FlatLayerInfo> layers;
         private final BlockState roadBlock;
+        private final BlockState borderBlock;
 
-        public PlotworldGeneratorSettings(int plotSize, int roadSize, int generationHeight, Supplier<Biome> biome, Block roadBlock, List<FlatLayerInfo> layers) {
+        public PlotworldGeneratorSettings(int plotSize, int roadSize, int generationHeight, Supplier<Biome> biome, Block roadBlock, Block borderBlock, List<FlatLayerInfo> layers) {
             this.plotSize = plotSize;
             this.roadSize = roadSize;
             this.generationHeight = generationHeight;
             this.biome = biome;
             this.roadBlock = roadBlock.defaultBlockState();
+            this.borderBlock = borderBlock.defaultBlockState();
             this.layers = layers;
         }
 
@@ -222,6 +276,9 @@ public class PlotworldGenerator extends ChunkGenerator {
             return roadBlock;
         }
 
+        public BlockState getBorderBlock() {
+            return borderBlock;
+        }
         public BlockState getBlockForLayer(int y) {
 
             int index = y;

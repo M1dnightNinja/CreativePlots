@@ -2,14 +2,16 @@ package me.m1dnightninja.creativeplots.fabric;
 
 import me.m1dnightninja.creativeplots.api.CreativePlotsAPI;
 import me.m1dnightninja.creativeplots.api.plot.IPlotWorld;
-import me.m1dnightninja.creativeplots.api.plot.PlotPos;
+import me.m1dnightninja.creativeplots.common.Plot;
 import me.m1dnightninja.creativeplots.common.PlotWorld;
 import me.m1dnightninja.creativeplots.fabric.generator.PlotworldGenerator;
 import me.m1dnightninja.midnightcore.api.MidnightCoreAPI;
 import me.m1dnightninja.midnightcore.api.config.ConfigSection;
+import me.m1dnightninja.midnightcore.api.module.lang.ILangModule;
 import me.m1dnightninja.midnightcore.common.config.JsonConfigProvider;
 import me.m1dnightninja.midnightcore.fabric.MidnightCore;
 import me.m1dnightninja.midnightcore.fabric.api.MidnightCoreModInitializer;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
@@ -63,12 +65,13 @@ public class CreativePlots implements MidnightCoreModInitializer {
         }*/
 
 
-        /* TODO:
-            Separate PlotWorld and PlotGenerator codecs.
-            Give PlotGenerators a reference to a registered PlotWorld when they are created.
-            Only store generation data such as layers and road size in PlotGenerators, and don't store materials or
-            generation height in PlotWorlds
-        */
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+            new MainCommand().register(dispatcher);
+        });
+
+        ILangModule mod = api.getModule(ILangModule.class);
+        PlotWorld.registerPlaceholders(mod);
+        Plot.registerPlaceholders(mod);
 
     }
 

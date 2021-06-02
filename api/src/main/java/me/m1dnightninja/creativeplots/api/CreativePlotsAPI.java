@@ -11,6 +11,8 @@ import me.m1dnightninja.midnightcore.api.registry.MIdentifier;
 import me.m1dnightninja.midnightcore.api.registry.MRegistry;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CreativePlotsAPI {
 
@@ -21,6 +23,10 @@ public class CreativePlotsAPI {
     private final FileConfig configFile;
     private final ConfigSection configDefaults;
 
+    private final List<MIdentifier> allowedItems;
+
+    private int maxSize = 4;
+
     public CreativePlotsAPI(File dataFolder, MidnightCoreAPI api, ConfigSection langDefaults, ConfigSection configDefaults) {
 
         instance = this;
@@ -29,6 +35,7 @@ public class CreativePlotsAPI {
         this.langProvider = api.getModule(ILangModule.class).createLangProvider(new File(dataFolder, "lang"), api.getDefaultConfigProvider(), langDefaults);
         this.configFile = new FileConfig(new File(dataFolder, "config" + api.getDefaultConfigProvider().getFileExtension()));
         this.configDefaults = configDefaults;
+        this.allowedItems = new ArrayList<>();
 
         loadConfig();
 
@@ -40,6 +47,7 @@ public class CreativePlotsAPI {
 
         // Reset content
         plotWorlds.clear();
+        allowedItems.clear();
 
         // Load new content
         loadConfig();
@@ -86,12 +94,41 @@ public class CreativePlotsAPI {
             }
         }
 
+        allowedItems.addAll(root.getListFiltered("allowed_items", MIdentifier.class));
+        maxSize = root.getInt("max_plot_size");
+
+    }
+
+    public int getMaxPlotSize() {
+        return maxSize;
     }
 
     public IPlotWorld getPlotWorld(MPlayer player) {
 
         return plotWorlds.get(player.getDimension());
 
+    }
+
+    public IPlotWorld getPlotWorld(MIdentifier id) {
+
+        return plotWorlds.get(id);
+
+    }
+
+    public MIdentifier getPlotWorldId(IPlotWorld world) {
+
+        return plotWorlds.getId(world);
+    }
+
+    public Iterable<IPlotWorld> getWorlds() {
+        return plotWorlds;
+    }
+
+    public boolean isAllowedItem(MIdentifier id) {
+        for(MIdentifier item : allowedItems) {
+            if(item.equals(id)) return true;
+        }
+        return false;
     }
 
     public static CreativePlotsAPI getInstance() {

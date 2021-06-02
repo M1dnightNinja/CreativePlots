@@ -1,14 +1,19 @@
 package me.m1dnightninja.creativeplots.common;
 
-import me.m1dnightninja.creativeplots.api.plot.IPlot;
-import me.m1dnightninja.creativeplots.api.plot.IPlotRegistry;
-import me.m1dnightninja.creativeplots.api.plot.IPlotWorld;
-import me.m1dnightninja.creativeplots.api.plot.PlotPos;
+import me.m1dnightninja.creativeplots.api.CreativePlotsAPI;
+import me.m1dnightninja.creativeplots.api.plot.*;
 import me.m1dnightninja.creativeplots.api.math.Region;
+import me.m1dnightninja.midnightcore.api.MidnightCoreAPI;
 import me.m1dnightninja.midnightcore.api.config.ConfigSection;
+import me.m1dnightninja.midnightcore.api.math.Color;
 import me.m1dnightninja.midnightcore.api.math.Vec3d;
 import me.m1dnightninja.midnightcore.api.math.Vec3i;
+import me.m1dnightninja.midnightcore.api.module.lang.ILangModule;
+import me.m1dnightninja.midnightcore.api.module.lang.PlaceholderSupplier;
 import me.m1dnightninja.midnightcore.api.player.MPlayer;
+import me.m1dnightninja.midnightcore.api.text.MComponent;
+import me.m1dnightninja.midnightcore.api.text.MStyle;
+import me.m1dnightninja.midnightcore.api.text.Title;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,13 +31,14 @@ public class Plot implements IPlot {
     private final String id;
 
     private UUID owner;
-    private String friendlyName;
+    private MComponent friendlyName;
 
     private final List<UUID> trusted;
+    private final List<UUID> denied;
     private final List<Region> area;
 
     // Create a default plot at a given position
-    protected Plot(IPlotWorld map, String id, PlotPos... pos) {
+    public Plot(IPlotWorld map, String id, PlotPos... pos) {
 
         this.map = map;
 
@@ -41,9 +47,13 @@ public class Plot implements IPlot {
         }
 
         this.id = id;
-        this.positions = Arrays.asList(pos);
+        this.friendlyName = MComponent.createTextComponent(id).withStyle(new MStyle().withColor(Color.fromRGBI(6)));
+        this.positions = new ArrayList<>();
+
+        positions.addAll(Arrays.asList(pos));
 
         this.trusted = new ArrayList<>();
+        this.denied = new ArrayList<>();
         this.area = new ArrayList<>();
 
         if(pos.length > 1) {
@@ -71,7 +81,7 @@ public class Plot implements IPlot {
     }
 
     @Override
-    public String getName() {
+    public MComponent getName() {
         return friendlyName;
     }
 
@@ -102,8 +112,91 @@ public class Plot implements IPlot {
     }
 
     @Override
-    public void setName(String name) {
+    public void setName(MComponent name) {
         this.friendlyName = name;
+    }
+
+    @Override
+    public void merge(IPlot other) {
+
+        for(PlotPos pos : other.getPositions()) {
+            if(!positions.contains(pos)) {
+                positions.add(pos);
+            }
+        }
+
+        area.clear();
+        calculateArea();
+    }
+
+    @Override
+    public List<Region> getArea() {
+        return area;
+    }
+
+    @Override
+    public List<PlotPos> getPositions() {
+        return positions;
+    }
+
+    @Override
+    public boolean isDenied(UUID u) {
+        return denied.contains(u);
+    }
+
+    @Override
+    public void trustPlayer(UUID u) {
+        if(u.equals(owner) || trusted.contains(u)) return;
+
+        trusted.add(u);
+    }
+
+    @Override
+    public void untrustPlayer(UUID u) {
+        trusted.remove(u);
+    }
+
+    @Override
+    public void denyPlayer(UUID u) {
+        if(u.equals(owner) || denied.contains(u)) return;
+
+        denied.add(u);
+        MPlayer pl = MidnightCoreAPI.getInstance().getPlayerManager().getPlayer(u);
+
+
+        int offset = map.getRoadSize() / 2;
+        if(map.getRoadSize() % 2 == 1) offset += 1;
+
+        if(contains(pl.getLocation().truncate())) {
+            pl.teleport(getTeleportLocation().add(new Vec3d(-1 * offset, 1, -1 * offset)), 0, 0);
+        }
+    }
+
+    @Override
+    public void undenyPlayer(UUID u) {
+        denied.remove(u);
+    }
+
+    @Override
+    public MComponent getOwnerName() {
+
+        return getOwnerName(null);
+    }
+
+    private MComponent getOwnerName(MPlayer pl) {
+
+        MPlayer player = MidnightCoreAPI.getInstance().getPlayerManager().getPlayer(owner);
+        if(player != null) {
+            return player.getName();
+        }
+
+        return CreativePlotsAPI.getInstance().getLangProvider().getMessage("plot.null_owner", pl);
+    }
+
+    @Override
+    public void sendEnterTitle(MPlayer player) {
+        CreativePlotsAPI.getInstance().getLangProvider().sendTitle("plot.title", player, Title.TITLE, player, this, map);
+        CreativePlotsAPI.getInstance().getLangProvider().sendTitle("plot.subtitle", player, Title.SUBTITLE, player, this, map);
     }
 
 
@@ -114,95 +207,77 @@ public class Plot implements IPlot {
         int maxX = minX;
         int maxZ = minZ;
 
-        for(PlotPos pos1 : positions) {
-
-            if(pos1.getX() < minX) {
-                minX = pos1.getX();
-            } else if(pos1.getX() > maxX) {
-                maxX = pos1.getX();
-            }
-
-            if(pos1.getZ() < minZ) {
-                minZ = pos1.getZ();
-            } else if(pos1.getZ() > maxZ) {
-                maxX = pos1.getZ();
-            }
-        }
-
-        int[][] map = new int[maxX-minX][maxZ-minZ];
-
-        for(int z = 0 ; z < map.length ; z++) {
-            for(int x = 0 ; x < map[0].length ; x++) {
-                if(positions.contains(new PlotPos(x,z))) {
-                    map[x][z] = 1;
-                } else {
-                    map[x][z] = 0;
-                }
-            }
+        for(PlotPos pos : positions) {
+            if(pos.getX() < minX) minX = pos.getX();
+            if(pos.getX() > maxX) maxX = pos.getX();
+            if(pos.getZ() < minZ) minZ = pos.getZ();
+            if(pos.getZ() > maxZ) maxZ = pos.getZ();
         }
 
 
-        for(int iz = minX ; iz < maxX ; iz++) {
-            for(int ix = minZ ; ix < maxZ ; ix++) {
+        int xCount = maxX - minX + 1;
+        int zCount = maxZ - minZ + 1;
 
-                int x = ix;
-                int z = iz;
+        int[][] map = new int[xCount][zCount];
 
-                Vec3i c1 = null;
-                Vec3i c2 = null;
+        for(int x = 0 ; x < xCount ; x++) {
+            for(int z = 0 ; z < zCount ; z++) {
+                PlotPos pos = new PlotPos(x + minX, z + minZ);
+                map[x][z] = positions.contains(pos) ? 1 : 0;
+            }
+        }
 
-                boolean[] canExpand = { true, true, true, true };
+        for(int x = 0 ; x < xCount ; x++) {
+            for(int z = 0 ; z < zCount ; z++) {
 
-                if(map[x][z] == 1) {
-                    c1 = new Vec3i(x, this.map.getWorldFloor(),z);
-                    c2 = new Vec3i(x, this.map.getWorldHeight(), z);
-                }
+                int state = map[x][z];
 
-                while(true) {
+                if(state == 1) {
 
-                    if(x == minX || map[x-1][z] == 0) {
-                        canExpand[0] = false;
-                    }
-                    if(z == minZ || map[x][z-1] == 0) {
-                        canExpand[1] = false;
-                    }
-                    if(x == maxX || map[x+1][z] == 0) {
-                        canExpand[2] = false;
-                    }
-                    if(z == maxZ || map[x][z+1] == 0) {
-                        canExpand[3] = false;
-                    }
+                    int ix = x;
+                    int iz = z;
 
-                    if(canExpand[0]) {
-                        x -= 1;
-                        c1.add(new Vec3i(-1,0,0));
-                    }
-                    if(canExpand[1]) {
-                        z -= 1;
-                        c1.add(new Vec3i(0,0,-1));
-                    }
-                    if(canExpand[2]) {
-                        x += 1;
-                        c2.add(new Vec3i(1,0,0));
-                    }
-                    if(canExpand[3]) {
-                        z += 1;
-                        c2.add(new Vec3i(0,0,1));
-                    }
+                    boolean[] canExpand = new boolean[] { true, true, true, true };
+                    PlotPos lower = new PlotPos(x, z);
+                    PlotPos higher = new PlotPos(x, z);
 
-                    for(int dx = c1.getX() ; dx < c2.getX() ; dx++) {
-                        for(int dz = c2.getZ() ; dz < c2.getZ() ; dz++) {
-                            map[dx][dz] = 2;
+                    while(true) {
+
+                        if(ix == 0 || map[ix - 1][higher.getZ()] == 0) canExpand[0] = false;
+                        if(iz == 0 || map[higher.getX()][iz - 1] == 0) canExpand[1] = false;
+                        if(ix + 1 == xCount || map[ix + 1][higher.getZ()] == 0) canExpand[2] = false;
+                        if(iz + 1 == zCount || map[higher.getX()][iz + 1] == 0) canExpand[3] = false;
+
+                        if(canExpand[0]) {
+                            ix -= 1;
+                            lower = lower.getAdjacent(PlotDirection.WEST);
+                            continue;
                         }
-                    }
+                        if(canExpand[1]) {
+                            iz -= 1;
+                            lower = lower.getAdjacent(PlotDirection.NORTH);
+                            continue;
+                        }
+                        if(canExpand[2]) {
+                            ix += 1;
+                            higher = higher.getAdjacent(PlotDirection.EAST);
+                            continue;
+                        }
+                        if(canExpand[3]) {
+                            iz += 1;
+                            higher = higher.getAdjacent(PlotDirection.SOUTH);
+                            continue;
+                        }
 
-                    if(!(canExpand[0] || canExpand[1] || canExpand[2] || canExpand[3])) {
+                        for(int rx = lower.getX() ; rx < higher.getX() + 1; rx++) {
+                            for(int rz = lower.getZ() ; rz < higher.getZ() + 1 ; rz++) {
+                                map[rx][rz] = 2;
+                            }
+                        }
 
-                        Region r1 = new PlotPos(c1.getX(), c1.getZ()).toRegion(this.map);
-                        Region r2 = new PlotPos(c2.getX(), c2.getZ()).toRegion(this.map);
-
-                        Region out = new Region(r1.getLowerBound(), r2.getUpperBound().subtract(r1.getLowerBound()));
-                        area.add(out);
+                        Region l = new PlotPos(lower.getX() + minX, lower.getZ() + minZ).toRegion(this.map);
+                        Region h = new PlotPos(higher.getX() + minX, higher.getZ() + minZ).toRegion(this.map);
+                        area.add(new Region(l.getLowerBound(), h.getUpperBound().subtract(l.getLowerBound())));
 
                         break;
                     }
@@ -247,13 +322,20 @@ public class Plot implements IPlot {
         }
 
         if(section.has("name")) {
-            out.friendlyName = section.getString("name");
+            out.friendlyName = MComponent.Serializer.parse(section.getString("name"));
         }
 
         if(section.has("trusted", List.class)) {
-            List<String> list = section.getStringList("trusted");
+            List<String> list = section.getListFiltered("trusted", String.class);
             for(String s : list) {
                 out.trusted.add(UUID.fromString(s));
+            }
+        }
+
+        if(section.has("denied", List.class)) {
+            List<String> list = section.getListFiltered("denied", String.class);
+            for(String s : list) {
+                out.denied.add(UUID.fromString(s));
             }
         }
 
@@ -265,8 +347,11 @@ public class Plot implements IPlot {
         ConfigSection out = new ConfigSection();
 
         out.set("id", id);
-        out.set("owner", owner.toString());
-        out.set("name", friendlyName);
+        out.set("name", MComponent.Serializer.toJsonString(friendlyName));
+
+        if(owner != null) {
+            out.set("owner", owner.toString());
+        }
 
         List<ConfigSection> poss = new ArrayList<>();
         for(PlotPos pos : positions) {
@@ -285,8 +370,40 @@ public class Plot implements IPlot {
             out.set("trusted", trust);
         }
 
+        if(denied.size() > 0) {
+            List<String> deny = new ArrayList<>();
+            for (UUID u : denied) {
+                deny.add(u.toString());
+            }
+            out.set("denied", deny);
+        }
+
         return out;
 
+    }
+
+
+    public static void registerPlaceholders(ILangModule mod) {
+
+        mod.registerInlinePlaceholderSupplier("creativeplots_plot_id", PlaceholderSupplier.create(IPlot.class, IPlot::getId));
+        mod.registerPlaceholderSupplier("creativeplots_plot_name", PlaceholderSupplier.create(IPlot.class, IPlot::getName));
+
+        mod.registerPlaceholderSupplier("creativeplots_plot_owner", args -> {
+            MPlayer pl = null;
+            Plot plot = null;
+            for(Object o : args) {
+                if(o instanceof MPlayer) {
+                    pl = (MPlayer) o;
+                    continue;
+                }
+                if(o instanceof Plot) {
+                    plot = (Plot) o;
+                }
+            }
+            if(plot == null) return null;
+
+            return plot.getOwnerName(pl);
+        });
     }
 
 }

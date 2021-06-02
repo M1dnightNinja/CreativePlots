@@ -12,6 +12,9 @@ repositories {
     maven {
         url 'https://libraries.minecraft.net/'
     }
+    maven {
+        url 'https://maven.enginehub.org/repo/'
+    }
     mavenLocal()
 }
 
@@ -27,6 +30,12 @@ dependencies {
 
     modImplementation("net.fabricmc:fabric-loader:0.11.3")
     modImplementation("me.m1dnightninja.midnightcore:fabric:1.0-latest")
+    modImplementation("com.sk89q.worldedit:worldedit-core:7.3.0-SNAPSHOT") {
+        transitive = false
+    }
+    /*modImplementation("com.sk89q.worldedit:worldedit-fabric-mc1.16.4:7.3.0-SNAPSHOT") {
+        transitive = false
+    }*/
 
     shade(project(':api'))
     shade(project(':common'))

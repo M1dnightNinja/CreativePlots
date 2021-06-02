@@ -1,3 +1,27 @@
 {
-  "generator.plotworld": "Plot World"
+  "command.error.not_claimed": "&cYou do not own this plot!",
+  "command.error.invalid_location": "&cYou are not in a plot!",
+  "command.error.invalid_direction": "&cThere is no plot in that direction!",
+  "command.error.too_big": "&cThe maximum plot size is &f%limit%!",
+  "command.error.claimed": "&cThat plot is already claimed!",
+  "command.error.invalid_world": "&cYou are not in a plot world!",
+  "command.error.invalid_self_target": "&cYou own this plot!",
+  "command.error.invalid_trust_target": "&cThat player is already trusted!",
+  "command.error.invalid_deny_target": "&cThat player is already denied!",
+  "command.error.invalid_untrust_target": "&cThat player is not trusted!",
+  "command.error.invalid_undeny_target": "&cThat player is not denied!",
+  "command.claim.success": "&aPlot claimed!",
+  "command.delete.success": "&aPlot deleted!",
+  "command.delete.gui.title": "Confirm",
+  "command.delete.gui.yes": "&aDelete",
+  "command.delete.gui.no": "&cCancel",
+  "command.rename.success": "&aPlot renamed to &f%name%&a!",
+  "command.trust.success": "&f%player_name% &atrusted! They can now build on this plot.",
+  "command.remove.success": "&f%player_name% &aremoved! They can no longer build on this plot.",
+  "command.deny.success": "&f%player_name% &adenied! They can no longer enter this plot.",
+  "command.allow.success": "&f%player_name% &aallowed! They can once again enter this plot.",
+  "command.merge.success": "&aPlot merged!",
+  "plot.title": "%creativeplots_plot_name%",
+  "plot.subtitle": "&7Owned by %creativeplots_plot_owner%",
+  "plot.null_owner": "Server"
 }

@@ -1,10 +1,13 @@
 package me.m1dnightninja.creativeplots.api.plot;
 
+import me.m1dnightninja.creativeplots.api.math.Region;
 import me.m1dnightninja.midnightcore.api.config.ConfigSection;
 import me.m1dnightninja.midnightcore.api.math.Vec3d;
 import me.m1dnightninja.midnightcore.api.math.Vec3i;
 import me.m1dnightninja.midnightcore.api.player.MPlayer;
+import me.m1dnightninja.midnightcore.api.text.MComponent;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface IPlot {
@@ -31,7 +34,7 @@ public interface IPlot {
      *
      * @return The name of the plot as a String
      */
-    String getName();
+    MComponent getName();
 
 
     /**
@@ -73,7 +76,34 @@ public interface IPlot {
      *
      * @param name The new name as a String
      */
-    void setName(String name);
+    void setName(MComponent name);
+
+
+    void merge(IPlot other);
+
+
+    List<Region> getArea();
+
+
+    List<PlotPos> getPositions();
+
+
+    boolean isDenied(UUID u);
+
+
+    void trustPlayer(UUID u);
+
+    void untrustPlayer(UUID u);
+
+    void denyPlayer(UUID u);
+
+    void undenyPlayer(UUID u);
+
+
+    MComponent getOwnerName();
+
+
+    void sendEnterTitle(MPlayer player);
 
 
     ConfigSection serialize();

@@ -3,6 +3,7 @@ package me.m1dnightninja.creativeplots.api.plot;
 import me.m1dnightninja.midnightcore.api.math.Vec3d;
 import me.m1dnightninja.midnightcore.api.math.Vec3i;
 import me.m1dnightninja.midnightcore.api.player.MPlayer;
+import me.m1dnightninja.midnightcore.api.registry.MIdentifier;
 
 
 public interface IPlotWorld {
@@ -42,6 +43,12 @@ public interface IPlotWorld {
      */
     int getGenerationHeight();
 
+    MIdentifier getBorderBlock(PlotPos position);
+
+    MIdentifier getUnclaimedBorderBlock();
+
+    MIdentifier getClaimedBorderBlock();
+
     /**
      * Gets the spawn location in the world
      *
@@ -57,17 +64,21 @@ public interface IPlotWorld {
     Vec3i toLocation(PlotPos position);
 
     /**
+     * Queries whether or not a player can use items or blocks at a particular location
      *
-     * @param pl
-     * @return
+     * @param pl    The player in question
+     * @param block The block the player clicked on
+     * @return      Whether or not the player can interact with the item/block
      */
     boolean canInteract(MPlayer pl, Vec3i block);
 
 
     /**
+     * Queries whether or not a player place or break blocks at a particular location
      *
-     * @param pl
-     * @return
+     * @param pl    The player in question
+     * @param block The location where the block will be placed or broken
+     * @return      Whether or not the player can modify at that location
      */
     boolean canModify(MPlayer pl, Vec3i block);
 
@@ -78,5 +89,12 @@ public interface IPlotWorld {
      * @return The registry as a PlotRegistry
      */
     IPlotRegistry getPlotRegistry();
+
+    IPlot getPlot(Vec3i block);
+
+
+    void onEnteredWorld(MPlayer player);
+    void onLeftWorld(MPlayer player);
+    void onTick();
 
 }

@@ -34,29 +34,50 @@ public class PlotRegistry implements IPlotRegistry {
     }
 
     @Override
+    public void unregisterPlot(PlotPos pos) {
+        IPlot plot = getPlotAt(pos);
+        if(plot == null) return;
+
+        unregisterPlot(plot);
+    }
+
+    @Override
+    public void unregisterPlot(IPlot plot) {
+
+        List<PlotPos> positions = new ArrayList<>();
+        for(Map.Entry<PlotPos, IPlot> ent : registeredPlots.entrySet()) {
+            if(ent.getValue().equals(plot)) {
+                positions.add(ent.getKey());
+            }
+        }
+        for(PlotPos p : positions) {
+            registeredPlots.remove(p);
+        }
+    }
+
+    @Override
+    public IPlot getPlot(String id) {
+        for(IPlot plot : registeredPlots.values()) {
+            if(plot.getId().equals(id)) return plot;
+        }
+        return null;
+    }
+
+    @Override
     public int getSize() {
         return registeredPlots.size();
     }
 
+    public List<IPlot> getUniquePlots() {
+        List<IPlot> out = new ArrayList<>();
+        for(IPlot p : registeredPlots.values()) {
+            if(!out.contains(p)) out.add(p);
+        }
+        return out;
+    }
+
     @Override
     public Iterator<IPlot> iterator() {
-        return new Iterator<IPlot>() {
-
-            private int index = 0;
-            private final List<IPlot> plots = new ArrayList<>(registeredPlots.values());
-
-            @Override
-            public boolean hasNext() {
-                return index < registeredPlots.size();
-            }
-
-            @Override
-            public IPlot next() {
-                IPlot plot = plots.get(index);
-                index++;
-
-                return plot;
-            }
-        };
+        return getUniquePlots().iterator();
     }
 }

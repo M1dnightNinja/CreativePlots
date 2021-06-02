@@ -96,6 +96,19 @@ public class PlotPos implements Cloneable {
         return "[" + this.x + ", " + this.z + "]";
     }
 
+    private static int integerDivide(int a, int b)
+    {
+        if (a < 0)
+            if (b < 0)
+                return -a / -b;
+            else
+                return -(-a / b) - (-a % b != 0 ? 1 : 0);
+        else if (b < 0)
+            return -(a / -b) - (a % -b != 0 ? 1 : 0);
+        else
+            return a / b;
+    }
+
 
     /**
      * Generates a PlotPos from world coordinates
@@ -124,8 +137,8 @@ public class PlotPos implements Cloneable {
 
         if(ox < plotSize && oz < plotSize) {
 
-            int px = x < 0 ? (x / size - 1) : x / size;
-            int pz = z < 0 ? (z / size - 1) : z / size;
+            int px = integerDivide(x, size);
+            int pz = integerDivide(z, size);
 
             return new PlotPos(px, pz);
         }
@@ -152,8 +165,8 @@ public class PlotPos implements Cloneable {
 
         int size = plotSize + roadSize;
 
-        int hx = x < 0 ? (x / size - 1) : x / size;
-        int hz = z < 0 ? (z / size - 1) : z / size;
+        int hx = integerDivide(x, size);
+        int hz = integerDivide(z, size);
         int lx = hx - 1;
         int lz = hz - 1;
 
@@ -164,6 +177,26 @@ public class PlotPos implements Cloneable {
         poss[3] = new PlotPos(hx, hz);
 
         return poss;
+    }
+
+    public static boolean isPlotBorder(int x, int z, int plotSize, int roadSize) {
+
+        int offset = roadSize / 2;
+        if(roadSize % 2 == 1) offset += 1;
+
+        x -= offset;
+        z -= offset;
+
+        int size = plotSize + roadSize;
+
+        int ox = x % size;
+        int oz = z % size;
+
+        if(ox < 0) ox += size;
+        if(oz < 0) oz += size;
+
+        return (ox == size - 1 || ox == plotSize || oz == size - 1 || oz == plotSize) && ((ox <= plotSize || ox == size - 1) && (oz <= plotSize || oz == size - 1));
+
     }
 
 }

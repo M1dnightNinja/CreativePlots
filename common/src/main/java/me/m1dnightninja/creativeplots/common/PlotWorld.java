@@ -1,5 +1,6 @@
 package me.m1dnightninja.creativeplots.common;
 
+import me.m1dnightninja.creativeplots.api.CreativePlotsAPI;
 import me.m1dnightninja.creativeplots.api.plot.IPlot;
 import me.m1dnightninja.creativeplots.api.plot.IPlotRegistry;
 import me.m1dnightninja.creativeplots.api.plot.IPlotWorld;
@@ -8,10 +9,15 @@ import me.m1dnightninja.midnightcore.api.config.ConfigSection;
 import me.m1dnightninja.midnightcore.api.config.ConfigSerializer;
 import me.m1dnightninja.midnightcore.api.math.Vec3d;
 import me.m1dnightninja.midnightcore.api.math.Vec3i;
+import me.m1dnightninja.midnightcore.api.module.lang.ILangModule;
+import me.m1dnightninja.midnightcore.api.module.lang.PlaceholderSupplier;
 import me.m1dnightninja.midnightcore.api.player.MPlayer;
+import me.m1dnightninja.midnightcore.api.registry.MIdentifier;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PlotWorld implements IPlotWorld {
 
@@ -21,16 +27,24 @@ public class PlotWorld implements IPlotWorld {
     protected final int plotSize;
     protected final int roadSize;
 
+    protected final MIdentifier borderBlock;
+    protected final MIdentifier borderBlockClaimed;
+
     protected final Vec3d spawnLocation;
     protected final PlotRegistry plotRegistry;
 
-    public PlotWorld(int plotSize, int roadSize, int genHeight, int worldFloor, int worldHeight) {
+    protected final HashMap<MPlayer, Vec3d> locations = new HashMap<>();
+
+    public PlotWorld(int plotSize, int roadSize, int genHeight, int worldFloor, int worldHeight, MIdentifier borderBlock, MIdentifier borderBlockClaimed) {
 
         this.plotSize = plotSize;
         this.roadSize = roadSize;
         this.generationHeight = genHeight;
         this.worldFloor = worldFloor;
         this.worldHeight = worldHeight;
+
+        this.borderBlock = borderBlock;
+        this.borderBlockClaimed = borderBlockClaimed;
 
         this.plotRegistry = new PlotRegistry();
 
@@ -70,6 +84,21 @@ public class PlotWorld implements IPlotWorld {
     }
 
     @Override
+    public MIdentifier getBorderBlock(PlotPos position) {
+        return plotRegistry.getPlotAt(position) == null ? borderBlock : borderBlockClaimed;
+    }
+
+    @Override
+    public MIdentifier getUnclaimedBorderBlock() {
+        return borderBlock;
+    }
+
+    @Override
+    public MIdentifier getClaimedBorderBlock() {
+        return borderBlockClaimed;
+    }
+
+    @Override
     public Vec3d getSpawnLocation() {
 
         return spawnLocation;
@@ -78,23 +107,68 @@ public class PlotWorld implements IPlotWorld {
     @Override
     public Vec3i toLocation(PlotPos position) {
 
-        int offset = ((int) Math.ceil(roadSize / 2.0f));
+        int offset = roadSize / 2;
+        if(roadSize % 2 == 1) offset += 1;
 
-        int x = (plotSize * position.getX()) + (roadSize * position.getX()) + offset;
-        int z = (plotSize * position.getZ()) + (roadSize * position.getZ()) + offset;
+        int totalSize = plotSize + roadSize;
 
-        return new Vec3i(x, worldHeight, z);
+        int x = totalSize * position.getX() + offset;
+        int z = totalSize * position.getZ() + offset;
+
+        return new Vec3i(x, generationHeight + 1, z);
     }
 
     @Override
     public boolean canInteract(MPlayer pl, Vec3i block) {
+
+        IPlot plot = getPlot(block);
+        if(plot != null) {
+            return !plot.isDenied(pl.getUUID());
+        }
+
         return true;
     }
 
     @Override
     public boolean canModify(MPlayer pl, Vec3i block) {
 
-        if(block.getY() <= worldFloor) return false;
+        IPlot plot = getPlot(block);
+        if(plot != null) {
+            if(plot.canEdit(pl)) return true;
+        }
+
+        return pl.hasPermission("creativeplots.editanywhere");
+    }
+
+    @Override
+    public IPlotRegistry getPlotRegistry() {
+        return plotRegistry;
+    }
+
+    @Override
+    public void onEnteredWorld(MPlayer player) {
+        locations.put(player, player.getLocation());
+    }
+
+    @Override
+    public void onLeftWorld(MPlayer player) {
+        locations.remove(player);
+    }
+
+    @Override
+    public void onTick() {
+        for(Map.Entry<MPlayer, Vec3d> ent : locations.entrySet()) {
+            if(!ent.getKey().getLocation().equals(ent.getValue())) {
+
+                Vec3d loc = ent.getValue();
+                locations.put(ent.getKey(), ent.getKey().getLocation());
+                playerMoved(ent.getKey(), loc, ent.getKey().getLocation());
+            }
+        }
+    }
+
+    @Override
+    public IPlot getPlot(Vec3i block) {
 
         PlotPos[] poss;
 
@@ -111,17 +185,31 @@ public class PlotWorld implements IPlotWorld {
             if(plot == null) continue;
 
             if(plot.contains(block)) {
-                if(plot.canEdit(pl)) return true;
+                return plot;
             }
         }
 
-        return pl.hasPermission("creativeplots.editanywhere");
+        return null;
     }
 
-    @Override
-    public IPlotRegistry getPlotRegistry() {
-        return plotRegistry;
+    private void playerMoved(MPlayer pl, Vec3d oldLoc, Vec3d newLoc) {
+
+        IPlot oldPlot = getPlot(oldLoc.truncate());
+        IPlot newPlot = getPlot(newLoc.truncate());
+        if(newPlot != null && oldPlot != newPlot) {
+
+            if(newPlot.isDenied(pl.getUUID())) {
+                locations.put(pl, oldLoc);
+                pl.teleport(oldLoc, pl.getYaw(), pl.getPitch());
+
+            } else {
+
+                newPlot.sendEnterTitle(pl);
+            }
+        }
+
     }
+
 
     public static final ConfigSerializer<IPlotWorld> SERIALIZER = new ConfigSerializer<IPlotWorld>() {
 
@@ -134,7 +222,10 @@ public class PlotWorld implements IPlotWorld {
             int worldFloor = section.getInt("world_floor");
             int generationHeight = section.getInt("generation_height");
 
-            PlotWorld out = new PlotWorld(plotSize, roadSize, generationHeight, worldFloor, worldHeight);
+            MIdentifier borderBlock = section.get("border_block", MIdentifier.class);
+            MIdentifier borderBlockClaimed = section.get("border_block_claimed", MIdentifier.class);
+
+            PlotWorld out = new PlotWorld(plotSize, roadSize, generationHeight, worldFloor, worldHeight, borderBlock, borderBlockClaimed);
 
             if(section.has("plots", List.class)) {
                 List<ConfigSection> lst = section.getList("plots", ConfigSection.class);
@@ -157,6 +248,8 @@ public class PlotWorld implements IPlotWorld {
             out.set("world_height", object.getWorldHeight());
             out.set("world_floor", object.getWorldFloor());
             out.set("generation_height", object.getGenerationHeight());
+            out.set("border_block", object.getUnclaimedBorderBlock());
+            out.set("border_block_claimed", object.getClaimedBorderBlock());
 
             List<ConfigSection> plots = new ArrayList<>();
             for(IPlot pl : object.getPlotRegistry()) {
@@ -167,5 +260,12 @@ public class PlotWorld implements IPlotWorld {
             return out;
         }
     };
+
+    public static void registerPlaceholders(ILangModule mod) {
+
+        mod.registerInlinePlaceholderSupplier("creativeplots_plotworld_id",   PlaceholderSupplier.create(IPlotWorld.class, pw -> CreativePlotsAPI.getInstance().getPlotWorldId(pw).toString()));
+        mod.registerInlinePlaceholderSupplier("creativeplots_plotworld_name", PlaceholderSupplier.create(IPlotWorld.class, pw -> CreativePlotsAPI.getInstance().getPlotWorldId(pw).getPath()));
+
+    }
 
 }
