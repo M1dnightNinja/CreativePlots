@@ -99,6 +99,7 @@ public interface IPlot {
 
     void undenyPlayer(UUID u);
 
+    boolean hasOwnerPermissions(MPlayer player);
 
     MComponent getOwnerName();
 

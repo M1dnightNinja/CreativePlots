@@ -1,5 +1,7 @@
 package me.m1dnightninja.creativeplots.api.plot;
 
+import java.util.List;
+
 public interface IPlotRegistry extends Iterable<IPlot> {
 
     IPlot getPlotAt(PlotPos plot);
@@ -11,6 +13,8 @@ public interface IPlotRegistry extends Iterable<IPlot> {
     void unregisterPlot(IPlot pos);
 
     IPlot getPlot(String id);
+
+    List<IPlot> getUniquePlots();
 
     int getSize();
 

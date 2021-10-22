@@ -41,7 +41,7 @@ public class Region {
         Vec3i lower = new Vec3i(
                 Math.min(p1.getX(), p2.getX()),
                 Math.min(p1.getY(), p2.getY()),
-                Math.min(p1.getY(), p2.getY()));
+                Math.min(p1.getZ(), p2.getZ()));
         Vec3i extent = new Vec3i(
                 Math.max(p1.getX(), p2.getX()) - lower.getX(),
                 Math.max(p1.getY(), p2.getY()) - lower.getY(),
@@ -53,14 +53,18 @@ public class Region {
 
     public static Region normalized(Vec3i p1, Vec3i p2) {
 
-        Vec3i lower = new Vec3i(
-                Math.min(p1.getX(), p2.getX()),
-                Math.min(p1.getY(), p2.getY()),
-                Math.min(p1.getZ(), p2.getZ()));
-        Vec3i extent = new Vec3i(
-                Math.max(p1.getX(), p2.getX()),
-                Math.max(p1.getY(), p2.getY()),
-                Math.max(p1.getZ(), p2.getZ()));
+        int[] xyz1 = { p1.getX(), p1.getY(), p1.getZ() };
+        int[] xyz2 = { p2.getX(), p2.getY(), p2.getZ() };
+
+        for(int i = 0 ; i < 3 ; i++) {
+            if (xyz2[i] < 0) {
+                xyz1[i] += xyz2[i];
+                xyz2[i] *= -1;
+            }
+        }
+
+        Vec3i lower = new Vec3i(xyz1[0], xyz1[1], xyz1[2]);
+        Vec3i extent = new Vec3i(xyz2[0], xyz2[1], xyz2[2]);
 
         return new Region(lower, extent);
 
@@ -74,4 +78,8 @@ public class Region {
         return new Region(lower.add(dist), extent);
     }
 
+    @Override
+    public String toString() {
+        return "[" + lower.toString() + "]-[" + getUpperBound().toString() + "]";
+    }
 }

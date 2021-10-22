@@ -2,6 +2,7 @@ package me.m1dnightninja.creativeplots.api;
 
 import me.m1dnightninja.creativeplots.api.plot.IPlotWorld;
 import me.m1dnightninja.midnightcore.api.MidnightCoreAPI;
+import me.m1dnightninja.midnightcore.api.config.ConfigRegistry;
 import me.m1dnightninja.midnightcore.api.config.ConfigSection;
 import me.m1dnightninja.midnightcore.api.config.FileConfig;
 import me.m1dnightninja.midnightcore.api.module.lang.ILangModule;
@@ -32,8 +33,8 @@ public class CreativePlotsAPI {
         instance = this;
 
         this.plotWorlds = new MRegistry<>();
-        this.langProvider = api.getModule(ILangModule.class).createLangProvider(new File(dataFolder, "lang"), api.getDefaultConfigProvider(), langDefaults);
-        this.configFile = new FileConfig(new File(dataFolder, "config" + api.getDefaultConfigProvider().getFileExtension()));
+        this.langProvider = api.getModule(ILangModule.class).createLangProvider(new File(dataFolder, "lang"), langDefaults);
+        this.configFile = new FileConfig(new File(dataFolder, "config" + ConfigRegistry.INSTANCE.getDefaultProvider().getFileExtension()));
         this.configDefaults = configDefaults;
         this.allowedItems = new ArrayList<>();
 

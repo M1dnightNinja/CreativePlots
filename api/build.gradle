@@ -3,7 +3,7 @@ repositories {
 }
 
 dependencies {
-    compile("me.m1dnightninja.midnightcore:api:1.0-latest")
+    compileOnly("me.m1dnightninja.midnightcore:api:1.0-latest")
 }
 
 artifacts {

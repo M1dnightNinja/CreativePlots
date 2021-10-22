@@ -7,6 +7,7 @@ public class PlotPos implements Cloneable {
 
     // The coordinates of the plot
     private final int x, z;
+    private final int hashCode;
 
 
     /**
@@ -18,6 +19,8 @@ public class PlotPos implements Cloneable {
     public PlotPos(int x, int z) {
         this.x = x;
         this.z = z;
+
+        hashCode = toString().hashCode();
     }
 
     /**
@@ -199,4 +202,8 @@ public class PlotPos implements Cloneable {
 
     }
 
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
 }

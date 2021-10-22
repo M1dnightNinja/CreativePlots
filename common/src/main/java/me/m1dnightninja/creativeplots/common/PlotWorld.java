@@ -158,11 +158,12 @@ public class PlotWorld implements IPlotWorld {
     @Override
     public void onTick() {
         for(Map.Entry<MPlayer, Vec3d> ent : locations.entrySet()) {
-            if(!ent.getKey().getLocation().equals(ent.getValue())) {
+            Vec3d ploc = ent.getKey().getLocation();
+            Vec3d oloc = ent.getValue();
+            if(!ploc.equals(ent.getValue())) {
 
-                Vec3d loc = ent.getValue();
-                locations.put(ent.getKey(), ent.getKey().getLocation());
-                playerMoved(ent.getKey(), loc, ent.getKey().getLocation());
+                locations.put(ent.getKey(), ploc);
+                playerMoved(ent.getKey(), oloc, ploc);
             }
         }
     }
@@ -180,11 +181,12 @@ public class PlotWorld implements IPlotWorld {
         }
 
         for(PlotPos p : poss) {
-            IPlot plot = plotRegistry.getPlotAt(p);
 
+            IPlot plot = plotRegistry.getPlotAt(p);
             if(plot == null) continue;
 
             if(plot.contains(block)) {
+
                 return plot;
             }
         }

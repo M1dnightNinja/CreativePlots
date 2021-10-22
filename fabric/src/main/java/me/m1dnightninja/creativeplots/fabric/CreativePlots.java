@@ -10,7 +10,7 @@ import me.m1dnightninja.midnightcore.api.config.ConfigSection;
 import me.m1dnightninja.midnightcore.api.module.lang.ILangModule;
 import me.m1dnightninja.midnightcore.common.config.JsonConfigProvider;
 import me.m1dnightninja.midnightcore.fabric.MidnightCore;
-import me.m1dnightninja.midnightcore.fabric.api.MidnightCoreModInitializer;
+import me.m1dnightninja.midnightcore.fabric.MidnightCoreModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.Registry;
@@ -22,7 +22,6 @@ public class CreativePlots implements MidnightCoreModInitializer {
     @Override
     public void onInitialize() {
 
-        MidnightCoreAPI.getConfigRegistry().registerSerializer(IPlotWorld.class, PlotWorld.SERIALIZER);
         new PlotListener().register();
 
     }
@@ -32,8 +31,10 @@ public class CreativePlots implements MidnightCoreModInitializer {
 
         File dataFolder = new File("config/CreativePlots");
 
+        api.getConfigRegistry().registerSerializer(IPlotWorld.class, PlotWorld.SERIALIZER);
+
         ConfigSection langDefaults = JsonConfigProvider.INSTANCE.loadFromStream(getClass().getResourceAsStream("/assets/creativeplots/lang/en_us.json"));
-        ConfigSection configDefaults = JsonConfigProvider.INSTANCE.loadFromStream(getClass().getResourceAsStream("/config.json"));
+        ConfigSection configDefaults = JsonConfigProvider.INSTANCE.loadFromStream(getClass().getResourceAsStream("/assets/creativeplots/config.json"));
 
         CreativePlotsAPI capi = new CreativePlotsAPI(dataFolder, api, langDefaults, configDefaults);
 

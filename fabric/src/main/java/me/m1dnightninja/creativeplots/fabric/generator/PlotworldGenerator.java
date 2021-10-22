@@ -27,6 +27,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureMana
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 public class PlotworldGenerator extends ChunkGenerator {
@@ -110,7 +112,7 @@ public class PlotworldGenerator extends ChunkGenerator {
         int ox = chunkAccess.getPos().getMinBlockX();
         int oz = chunkAccess.getPos().getMinBlockZ();
 
-        for(int y = 1 ; y <= height + 1; y++) {
+        for(int y = worldGenRegion.getMinBuildHeight() ; y <= height + 1; y++) {
 
             BlockState state = plotworld.getBlockForLayer(y);
 
@@ -150,28 +152,31 @@ public class PlotworldGenerator extends ChunkGenerator {
     }
 
     @Override
-    public void fillFromNoise(LevelAccessor levelAccessor, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess) { }
+    public CompletableFuture<ChunkAccess> fillFromNoise(Executor levelAccessor, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess) {
+
+        return CompletableFuture.completedFuture(chunkAccess);
+    }
 
     @Override
-    public int getSpawnHeight() {
+    public int getSpawnHeight(LevelHeightAccessor levelHeightAccessor) {
         return plotworld.getGenerationHeight() + 1;
     }
 
     @Override
-    public int getBaseHeight(int i, int j, Heightmap.Types types) {
+    public int getBaseHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc) {
 
         return plotworld.getGenerationHeight();
     }
 
     @Override
-    public BlockGetter getBaseColumn(int i, int j) {
+    public NoiseColumn getBaseColumn(int i, int j, LevelHeightAccessor acc) {
 
         int height = plotworld.getGenerationHeight();
         BlockState[] states = new BlockState[height];
 
         boolean road = PlotPos.fromCoords(i, j, plotworld.getPlotSize(), plotworld.getRoadSize()) == null;
 
-        for(int y = 0 ; y < height ; y++) {
+        for(int y = acc.getMinBuildHeight() ; y < height ; y++) {
             BlockState blk = plotworld.getBlockForLayer(y+1);
             if(road && y + 1 == height) {
                 blk = plotworld.getRoadBlock();
@@ -179,7 +184,7 @@ public class PlotworldGenerator extends ChunkGenerator {
             states[y] = blk;
         }
 
-        return new NoiseColumn(states);
+        return new NoiseColumn(acc.getMinBuildHeight(), states);
     }
 
     @Override
@@ -211,13 +216,13 @@ public class PlotworldGenerator extends ChunkGenerator {
     }
 
     @Override
-    public int getFirstFreeHeight(int i, int j, Heightmap.Types types) {
-        return 0;
+    public int getFirstFreeHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc) {
+        return acc.getMinBuildHeight();
     }
 
     @Override
-    public int getFirstOccupiedHeight(int i, int j, Heightmap.Types types) {
-        return 0;
+    public int getFirstOccupiedHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc) {
+        return acc.getMinBuildHeight();
     }
 
 

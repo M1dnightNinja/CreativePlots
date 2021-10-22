@@ -13,7 +13,7 @@ import me.m1dnightninja.midnightcore.api.module.lang.PlaceholderSupplier;
 import me.m1dnightninja.midnightcore.api.player.MPlayer;
 import me.m1dnightninja.midnightcore.api.text.MComponent;
 import me.m1dnightninja.midnightcore.api.text.MStyle;
-import me.m1dnightninja.midnightcore.api.text.Title;
+import me.m1dnightninja.midnightcore.api.text.MTitle;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,11 +56,7 @@ public class Plot implements IPlot {
         this.denied = new ArrayList<>();
         this.area = new ArrayList<>();
 
-        if(pos.length > 1) {
-            calculateArea();
-        } else {
-            area.add(positions.get(0).toRegion(map));
-        }
+        calculateArea();
     }
 
     public void register(IPlotRegistry reg) {
@@ -93,7 +89,8 @@ public class Plot implements IPlot {
 
     @Override
     public Vec3d getTeleportLocation() {
-        return new Vec3d(0,0,0);
+        Vec3i blockPos = map.toLocation(positions.get(0));
+        return new Vec3d(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5);
     }
 
     @Override
@@ -125,7 +122,6 @@ public class Plot implements IPlot {
             }
         }
 
-        area.clear();
         calculateArea();
     }
 
@@ -178,6 +174,11 @@ public class Plot implements IPlot {
     }
 
     @Override
+    public boolean hasOwnerPermissions(MPlayer player) {
+        return player.getUUID().equals(owner) || player.hasPermission("creativeplots.ownereverywhere");
+    }
+
+    @Override
     public MComponent getOwnerName() {
 
         return getOwnerName(null);
@@ -185,22 +186,27 @@ public class Plot implements IPlot {
 
     private MComponent getOwnerName(MPlayer pl) {
 
-        MPlayer player = MidnightCoreAPI.getInstance().getPlayerManager().getPlayer(owner);
-        if(player != null) {
-            return player.getName();
-        }
+        if(owner == null) return CreativePlotsAPI.getInstance().getLangProvider().getMessage("plot.null_owner", pl);
 
-        return CreativePlotsAPI.getInstance().getLangProvider().getMessage("plot.null_owner", pl);
+        MPlayer player = MidnightCoreAPI.getInstance().getPlayerManager().getPlayer(owner);
+        return player.getName();
     }
 
     @Override
     public void sendEnterTitle(MPlayer player) {
-        CreativePlotsAPI.getInstance().getLangProvider().sendTitle("plot.title", player, Title.TITLE, player, this, map);
-        CreativePlotsAPI.getInstance().getLangProvider().sendTitle("plot.subtitle", player, Title.SUBTITLE, player, this, map);
+        CreativePlotsAPI.getInstance().getLangProvider().sendTitle("plot.title", player, MTitle.TITLE, player, this, map);
+        CreativePlotsAPI.getInstance().getLangProvider().sendTitle("plot.subtitle", player, MTitle.SUBTITLE, player, this, map);
     }
 
 
     private void calculateArea() {
+
+        area.clear();
+
+        if(positions.size() == 1) {
+            area.add(positions.get(0).toRegion(map));
+            return;
+        }
 
         int minX = positions.get(0).getX();
         int minZ = positions.get(0).getZ();

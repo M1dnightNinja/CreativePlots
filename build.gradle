@@ -15,7 +15,8 @@ subprojects {
     project.ext.modid = "creativeplots"
     project.ext.modclass = "CreativePlots"
     project.ext.modname = "Creative Plots"
-    project.ext.minecraftVersion = "1.16.5"
+    project.ext.minecraftVersion = "1.17.1"
+    project.ext.minecraftMajorVersion = "1.17"
 
     project.ext.majorVersion = '1'
     project.ext.minorVersion = '0'
@@ -29,8 +30,8 @@ subprojects {
     version = project.ext.fullVersion
 
 
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
 
 
     tasks.withType(JavaCompile) {

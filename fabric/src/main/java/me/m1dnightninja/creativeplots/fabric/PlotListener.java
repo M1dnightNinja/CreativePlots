@@ -6,8 +6,7 @@ import me.m1dnightninja.creativeplots.fabric.integration.WorldEditIntegration;
 import me.m1dnightninja.midnightcore.api.math.Vec3i;
 import me.m1dnightninja.midnightcore.api.player.MPlayer;
 import me.m1dnightninja.midnightcore.api.registry.MIdentifier;
-import me.m1dnightninja.midnightcore.fabric.api.event.*;
-import me.m1dnightninja.midnightcore.fabric.event.Event;
+import me.m1dnightninja.midnightcore.fabric.event.*;
 import me.m1dnightninja.midnightcore.fabric.player.FabricPlayer;
 import me.m1dnightninja.midnightcore.fabric.util.ConversionUtil;
 import net.fabricmc.loader.api.FabricLoader;
@@ -30,6 +29,7 @@ public class PlotListener {
         Event.register(PlayerTeleportEvent.class, this, this::onTeleport);
         Event.register(PlayerJoinedEvent.class, this, this::onJoin);
         Event.register(PlayerDisconnectEvent.class, this, this::onLeave);
+        Event.register(PortalCreateEvent.class, this, this::onPortal);
 
         if(FabricLoader.getInstance().isModLoaded("worldedit")) {
 
@@ -41,13 +41,13 @@ public class PlotListener {
     private void onBreak(BlockBreakEvent event) {
 
         IPlotWorld pw = CreativePlotsAPI.getInstance().getPlotWorld(event.getPlayer());
-        if(!pw.canModify(event.getPlayer(), new Vec3i(event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()))) event.setCancelled(true);
+        if(pw != null && !pw.canModify(event.getPlayer(), new Vec3i(event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()))) event.setCancelled(true);
     }
 
     private void onPlace(BlockPlaceEvent event) {
 
         IPlotWorld pw = CreativePlotsAPI.getInstance().getPlotWorld(event.getPlayer());
-        if(!pw.canModify(event.getPlayer(), new Vec3i(event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()))) event.setCancelled(true);
+        if(pw != null && !pw.canModify(event.getPlayer(), new Vec3i(event.getPos().getX(), event.getPos().getY(), event.getPos().getZ()))) event.setCancelled(true);
     }
 
     private void onExplode(ExplosionEvent event) {
@@ -68,6 +68,7 @@ public class PlotListener {
         } else {
 
             IPlotWorld pw = CreativePlotsAPI.getInstance().getPlotWorld(source);
+            if(pw == null) return;
 
             for(int i = 0 ; i < event.getAffectedBlocks().size() ; i++) {
                 BlockPos pos = event.getAffectedBlocks().get(i);
@@ -97,6 +98,8 @@ public class PlotListener {
         }
 
         IPlotWorld pw = CreativePlotsAPI.getInstance().getPlotWorld(pl);
+        if(pw == null) return;
+
         if(!pw.canInteract(pl, loc)) {
             event.setCancelled(true);
             return;
@@ -128,8 +131,8 @@ public class PlotListener {
     private void onTeleport(PlayerTeleportEvent event) {
 
         MPlayer pl = FabricPlayer.wrap(event.getPlayer());
-        IPlotWorld oldWorld = CreativePlotsAPI.getInstance().getPlotWorld(ConversionUtil.fromResourceLocation(event.getFrom().getWorldId()));
-        IPlotWorld newWorld = CreativePlotsAPI.getInstance().getPlotWorld(ConversionUtil.fromResourceLocation(event.getTo().getWorldId()));
+        IPlotWorld oldWorld = CreativePlotsAPI.getInstance().getPlotWorld(event.getFrom().getWorld());
+        IPlotWorld newWorld = CreativePlotsAPI.getInstance().getPlotWorld(event.getTo().getWorld());
 
         if(oldWorld == newWorld) return;
 
@@ -142,6 +145,12 @@ public class PlotListener {
         IPlotWorld world = CreativePlotsAPI.getInstance().getPlotWorld(pl);
 
         if(world != null) world.onLeftWorld(pl);
+    }
+
+    private void onPortal(PortalCreateEvent event) {
+
+        IPlotWorld world = CreativePlotsAPI.getInstance().getPlotWorld(event.getSourceDimension());
+        if(world != null) event.setCancelled(true);
     }
 
 }

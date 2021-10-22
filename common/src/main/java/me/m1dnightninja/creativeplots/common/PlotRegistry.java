@@ -21,7 +21,9 @@ public class PlotRegistry implements IPlotRegistry {
     public IPlot getPlotAt(PlotPos plot) {
 
         for(Map.Entry<PlotPos, IPlot> ent : registeredPlots.entrySet()) {
-            if(ent.getKey().equals(plot)) return ent.getValue();
+            if(ent.getKey().equals(plot)) {
+                return ent.getValue();
+            }
         }
 
         return null;
@@ -44,13 +46,7 @@ public class PlotRegistry implements IPlotRegistry {
     @Override
     public void unregisterPlot(IPlot plot) {
 
-        List<PlotPos> positions = new ArrayList<>();
-        for(Map.Entry<PlotPos, IPlot> ent : registeredPlots.entrySet()) {
-            if(ent.getValue().equals(plot)) {
-                positions.add(ent.getKey());
-            }
-        }
-        for(PlotPos p : positions) {
+        for(PlotPos p : plot.getPositions()) {
             registeredPlots.remove(p);
         }
     }
@@ -68,6 +64,7 @@ public class PlotRegistry implements IPlotRegistry {
         return registeredPlots.size();
     }
 
+    @Override
     public List<IPlot> getUniquePlots() {
         List<IPlot> out = new ArrayList<>();
         for(IPlot p : registeredPlots.values()) {
