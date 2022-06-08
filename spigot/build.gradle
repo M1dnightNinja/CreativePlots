@@ -1,82 +1,46 @@
-
 plugins {
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
-}
 
-repositories {
-    maven {
-        url 'https://oss.sonatype.org/content/repositories/snapshots/'
-    }
-    maven {
-        url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
-    }
-    maven {
-        url 'https://libraries.minecraft.net/'
-    }
-    mavenLocal()
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+
 }
 
 configurations {
     shade
-    compileOnly.extendsFrom(shade)
-}
-
-dependencies {
-
-    compileOnly("org.spigotmc:spigot:${project.ext.minecraftVersion}-R0.1-SNAPSHOT")
-    //compileOnly("org.spigotmc:spigot:1.16.5-R0.1-SNAPSHOT")
-
-    shade(project(':api'))
-    shade(project(':common'))
-
-}
-
-processResources {
-    Map<String, ?> ex = new HashMap<>()
-    ex.put("version", project.ext.fullVersion)
-    ex.put("modid", project.ext.modid)
-    ex.put("modname", project.ext.modname)
-    ex.put("modclass", project.ext.modclass)
-    ex.put("minecraftVersion", project.ext.minecraftMajorVersion)
-
-    filesMatching("plugin.yml") {
-        expand(ex)
-    }
+    compileOnly.extendsFrom shade
 }
 
 shadowJar {
 
-    setArchivesBaseName("${project.ext.archiveName}-fabric-dev")
-    configurations = [ project.getConfigurations().shade ]
+    archiveClassifier.set('')
+    configurations = [project.configurations.shade]
+}
+tasks.assemble.dependsOn tasks.shadowJar
 
-    dependencies {
+dependencies {
 
-        exclude('net.fabricmc:.*')
-        include(project(':api'))
-        include(project(':common'))
+    implementation "org.spigotmc:spigot:${project.spigot_version}"
 
-        exclude('/mapping/*')
+    shade 'org.wallentines:midnightlib:1.0-SNAPSHOT'
+    shade 'org.wallentines.midnightcore:spigot:1.0-SNAPSHOT'
 
-    }
+    shade project(':api')
+    shade project(':common')
 
 }
 
-artifacts {
-    jar
-    sourcesJar
-}
+processResources {
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifacts {
-                jar
-                sourcesJar
-            }
-        }
-    }
+    Map<String, ?> ex = new HashMap<>()
+    ex.put("version", project.version)
+    ex.put("id", project.mod_id)
+    ex.put("name", project.mod_name)
+    ex.put("target", project.name)
+    ex.put("description", project.description)
+    ex.put("group", project.group)
+    ex.put("minecraftVersion", project.spigot_minecraft_version)
+    ex.put("mainClass", project.main_class_name)
 
-    repositories {
-        mavenLocal()
+    filesMatching("plugin.yml") {
+        expand(ex)
     }
 }

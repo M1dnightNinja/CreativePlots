@@ -1,6 +1,4 @@
-main: "me.m1dnightninja.${modid}.spigot.{$modclass}"
-version: {version}
-name: {modname}
-authors: [
-    M1dnight_Ninja
-]
+name: '${id}'
+main: '${group}.${id}.${target}.${mainClass}'
+version: '${version}'
+author: M1dnight_Ninja

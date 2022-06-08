@@ -1,17 +1,16 @@
-import net.fabricmc.loom.task.RemapJarTask
+// Loom documentation: https://fabricmc.net/wiki/documentation:fabric_loom
+// fabric.mod.json documentation: https://fabricmc.net/wiki/documentation:fabric_mod_json
 
 plugins {
-    id 'fabric-loom' version '0.8-SNAPSHOT'
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
+
+    id 'fabric-loom' version '0.11-SNAPSHOT'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+
 }
 
 repositories {
-    maven {
-        url 'https://maven.fabricmc.net/'
-    }
-    maven {
-        url 'https://libraries.minecraft.net/'
-    }
+
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     maven {
         url 'https://maven.enginehub.org/repo/'
     }
@@ -19,88 +18,89 @@ repositories {
 
 configurations {
     shade
-    compileOnly.extendsFrom(shade)
 }
+
+shadowJar {
+
+    archiveClassifier.set('')
+    configurations = [project.configurations.shade]
+}
+tasks.assemble.dependsOn tasks.shadowJar
 
 dependencies {
 
-    minecraft("com.mojang:minecraft:${project.ext.minecraftVersion}")
-    mappings(minecraft.officialMojangMappings())
+    minecraft "com.mojang:minecraft:${project.fabric_minecraft_version}"
+    mappings loom.officialMojangMappings()
 
-    modImplementation("net.fabricmc:fabric-loader:0.11.6")
+    modApi "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    modApi 'org.wallentines:midnightlib:1.0-SNAPSHOT'
+
+    modApi 'org.wallentines:midnightlib:1.0-SNAPSHOT'
+
+    modApi 'org.wallentines.midnightcore:common:1.0-SNAPSHOT'
+    modApi 'org.wallentines.midnightcore:fabric:1.0-SNAPSHOT'
+
+    include(modImplementation(fabricApi.module('fabric-api-base', "${project.fabric_api_version}")))
+    include(modImplementation(fabricApi.module('fabric-registry-sync-v0', "${project.fabric_api_version}")))
+
     modImplementation("com.sk89q.worldedit:worldedit-core:7.3.0-SNAPSHOT") {
         transitive = false
     }
 
-    modImplementation("me.m1dnightninja.midnightcore:api:1.0-latest")
-    modImplementation("me.m1dnightninja.midnightcore:common:1.0-latest")
-    modImplementation("me.m1dnightninja.midnightcore:fabric:1.0-latest")
+    implementation project(':api')
+    implementation project(':common')
 
-    shade(project(':api'))
-    shade(project(':common'))
+    shade project(':api')
+    shade project(':common')
+
 
 }
 
+loom {
+    runs {
+        client {
+            runDir = "run/client"
+            ideConfigGenerated = true
+            client()
+        }
+        server {
+            runDir = "run/server"
+            ideConfigGenerated = true
+            server()
+        }
+    }
+    interfaceInjection {
+        enableDependencyInterfaceInjection = true
+    }
+}
+
 processResources {
+
     Map<String, ?> ex = new HashMap<>()
-    ex.put("version", project.ext.fullVersion)
-    ex.put("modid", project.ext.modid)
-    ex.put("modname", project.ext.modname)
-    ex.put("modclass", project.ext.modclass)
-    ex.put("minecraftVersion", project.ext.minecraftMajorVersion)
+    ex.put("version", project.version)
+    ex.put("id", project.mod_id)
+    ex.put("name", project.mod_name)
+    ex.put("target", project.name)
+    ex.put("description", project.description)
+    ex.put("group", project.group)
+    ex.put("minecraftVersion", project.fabric_minecraft_version)
+    ex.put("fabricLoader", project.fabric_loader_version)
+    ex.put("mainClass", project.main_class_name)
 
     filesMatching("fabric.mod.json") {
+        expand(ex)
+    }
+    filesMatching("${project.mod_id}.mixins.json") {
         expand(ex)
     }
 }
 
 shadowJar {
-
-    setArchivesBaseName("${project.ext.archiveName}-fabric-dev")
-    configurations = [ project.getConfigurations().shade ]
-
-    dependencies {
-
-        exclude('net.fabricmc:.*')
-        include(project(':api'))
-        include(project(':common'))
-
-        exclude('/mapping/*')
-
-    }
-
+    configurations = [project.configurations.shade]
+    classifier "dev"
 }
 
-task remapShadowJar(type: RemapJarTask) {
-
-    setArchivesBaseName("${project.ext.archiveName}-fabric-mc${project.ext.minecraftVersion}")
-
-    dependsOn(tasks.shadowJar)
-    input = tasks.shadowJar.getArchivePath()
-    addNestedDependencies = true
-
-}
-
-tasks.assemble.dependsOn tasks.remapShadowJar
-
-artifacts {
-    archives tasks.remapShadowJar
-    shadow tasks.sourcesJar
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifact(remapJar) {
-                builtBy remapJar
-            }
-            artifact(sourcesJar) {
-                builtBy remapSourcesJar
-            }
-        }
-    }
-
-    repositories {
-        mavenLocal()
-    }
+remapJar {
+    dependsOn(shadowJar)
+    inputFile.set(shadowJar.archiveFile)
 }

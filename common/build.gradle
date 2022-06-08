@@ -1,35 +1,21 @@
-plugins {
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
-}
-
 repositories {
-    mavenLocal()
+
+    maven {
+        url "https://libraries.minecraft.net/"
+    }
 }
 
 dependencies {
 
-    compileOnly 'me.m1dnightninja.midnightcore:common:1.0-latest'
-    compileOnly 'me.m1dnightninja.midnightcore:api:1.0-latest'
+    compileOnly 'com.mojang:authlib:2.1.28'
+    compileOnly project(":api")
+    compileOnly "org.wallentines.midnightcore:common:1.0-SNAPSHOT"
 
-    compileOnly project(':api')
+    testImplementation 'junit:junit:4.13.2'
 }
 
-artifacts {
-    jar
-    sourcesJar
-}
+test {
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifacts {
-                jar
-                sourcesJar
-            }
-        }
-    }
-
-    repositories {
-        mavenLocal()
-    }
+    useJUnit()
+    maxHeapSize = '1G'
 }
