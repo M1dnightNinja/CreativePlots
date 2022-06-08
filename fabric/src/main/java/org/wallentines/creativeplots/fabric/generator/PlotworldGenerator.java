@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.Lifecycle;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.*;
-import net.minecraft.world.level.biome.Climate;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import org.wallentines.creativeplots.api.math.Region;
 import org.wallentines.creativeplots.api.plot.PlotPos;
@@ -21,14 +21,16 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import org.wallentines.midnightcore.api.MidnightCoreAPI;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+@ParametersAreNonnullByDefault
 public class PlotworldGenerator extends ChunkGenerator {
 
     public static final Codec<PlotworldGenerator> CODEC = RecordCodecBuilder.create(instance ->
@@ -44,7 +46,7 @@ public class PlotworldGenerator extends ChunkGenerator {
     }
 
     @Override
-    public void applyBiomeDecoration(WorldGenLevel worldGenLevel, ChunkAccess chunkAccess, StructureFeatureManager structureFeatureManager) { }
+    public void applyBiomeDecoration(WorldGenLevel worldGenLevel, ChunkAccess chunkAccess, StructureManager structureFeatureManager) { }
 
     @Override
     protected Codec<? extends ChunkGenerator> codec() {
@@ -52,22 +54,10 @@ public class PlotworldGenerator extends ChunkGenerator {
     }
 
     @Override
-    public ChunkGenerator withSeed(long l) {
-        return this;
-    }
+    public void applyCarvers(WorldGenRegion worldGenRegion, long l, RandomState randomState, BiomeManager biomeManager, StructureManager structureManager, ChunkAccess chunkAccess, GenerationStep.Carving carving) { }
 
     @Override
-    public Climate.Sampler climateSampler() {
-        return null;
-    }
-
-    @Override
-    public void applyCarvers(WorldGenRegion worldGenRegion, long l, BiomeManager biomeManager, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess, GenerationStep.Carving carving) {
-
-    }
-
-    @Override
-    public void buildSurface(WorldGenRegion worldGenRegion, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess) {
+    public void buildSurface(WorldGenRegion worldGenRegion, StructureManager structureFeatureManager, RandomState randomState, ChunkAccess chunkAccess) {
 
         int height = plotworld.getGenerationHeight();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -173,14 +163,15 @@ public class PlotworldGenerator extends ChunkGenerator {
         return 0;
     }
 
+
     @Override
-    public int getBaseHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc) {
+    public int getBaseHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc, RandomState state) {
 
         return plotworld.getGenerationHeight();
     }
 
     @Override
-    public NoiseColumn getBaseColumn(int i, int j, LevelHeightAccessor acc) {
+    public NoiseColumn getBaseColumn(int i, int j, LevelHeightAccessor acc, RandomState state) {
 
         int height = plotworld.getGenerationHeight();
         BlockState[] states = new BlockState[height];
@@ -202,13 +193,12 @@ public class PlotworldGenerator extends ChunkGenerator {
     public void spawnOriginalMobs(WorldGenRegion worldGenRegion) {}
 
     @Override
-    public void createStructures(RegistryAccess registryAccess, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess, StructureManager structureManager, long l) { }
+    public void createStructures(RegistryAccess registryAccess, RandomState state, StructureManager structureFeatureManager, ChunkAccess chunkAccess, StructureTemplateManager structureManager, long l) { }
 
     @Override
-    public CompletableFuture<ChunkAccess> fillFromNoise(Executor executor, Blender blender, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess) {
+    public CompletableFuture<ChunkAccess> fillFromNoise(Executor executor, Blender blender, RandomState randomState, StructureManager structureFeatureManager, ChunkAccess chunkAccess) {
         return CompletableFuture.completedFuture(chunkAccess);
     }
-
 
     @Override
     public int getSeaLevel() {
@@ -221,17 +211,18 @@ public class PlotworldGenerator extends ChunkGenerator {
     }
 
     @Override
-    public int getFirstFreeHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc) {
+    public int getFirstFreeHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc, RandomState randomState) {
         return acc.getMinBuildHeight();
     }
 
     @Override
-    public int getFirstOccupiedHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc) {
+    public int getFirstOccupiedHeight(int i, int j, Heightmap.Types types, LevelHeightAccessor acc, RandomState randomState) {
         return acc.getMinBuildHeight();
     }
 
+
     @Override
-    public void addDebugScreenInfo(List<String> list, BlockPos blockPos) { }
+    public void addDebugScreenInfo(List<String> list, RandomState randomState, BlockPos blockPos) { }
 
 
     public static class PlotworldGeneratorSettings {
